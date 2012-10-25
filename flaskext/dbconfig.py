@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+    flaskext.dbconfig
+    ~~~~~~~~~~~~~~~~~
+
+    Description of the module goes here...
+
+    :copyright: (c) 2012 by Ted Aronson.
+    :license: MIT, see LICENSE for more details.
+"""
 import sqlite3
 
 try:
