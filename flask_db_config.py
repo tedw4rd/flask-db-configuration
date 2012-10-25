@@ -26,6 +26,11 @@ class DBConfigurator():
     def connect(self):
         return sqlite3.connect(self.app.config['CONFIG_DATABASE'])
 
+    def teardown(self, exception):
+        ctx = stack.top
+        if hasattr(ctx, 'configuration_db'):
+            ctx.configuration_db.close()
+
     @property
     def connection(self):
         ctx = stack.top
@@ -33,14 +38,15 @@ class DBConfigurator():
             if not hasattr(ctx, 'configuration_db'):
                 ctx.configuration_db = self.connect()
             return ctx.configuration_db
+        else:
+            return self.connect()
 
     def configuration_available(self):
         query = "SELECT * FROM configuration_data"
         self.app.logger.debug("Checking for existing configuration data...")
         try:
-            connection.cursor().execute(query)
-            results = connection.cursor().fetchall()
-            connection.cursor().close()
+            self.connection.cursor().execute(query)
+            results = self.connection.cursor().fetchall()
         except sqlite3.OperationalError:
             self.app.logger.debug("Nope.")
             return False
@@ -49,13 +55,12 @@ class DBConfigurator():
         return True
 
     def setup_config_table(self):
-        query = "CREATE TABLE configuration_data (var_name text, value text)"
+        query = "CREATE TABLE configuration_data (var_name TEXT PRIMARY KEY, value TEXT)"
         self.app.logger.debug("Setting up configuration table...")
         try:
-            connection.cursor().execute(query)
-            results = connection.cursor().fetchall()
-            connection.cursor().close()
-            connection.commit()
+            self.connection.cursor().execute(query)
+            results = self.connection.cursor().fetchall()
+            self.connection.commit()
         except sqlite3.OperationalError as e:
             self.app.logger.error("An error occured while setting up configuration table: " + str(e))
             return False
@@ -68,30 +73,24 @@ class DBConfigurator():
         config = {}
         self.app.logger.debug("Loading app configuration from table...")
         try:
-            for row in connection.cursor().execute(query):
+            for row in self.connection.cursor().execute(query):
                 config[row[0]] = row[1]
-            connection.cursor().close()
         except sqlite3.OperationalError:
             self.app.logger.error("A DB error occured while loading configuration.")
             return
 
+        print(str(config))
         for k, v in config.iteritems():
             self.app.config[k] = v
 
         self.app.logger.debug("Loaded %s configuration variables." % len(config))
 
     def set_configuration_data(self, var_name, value):
-        find_query = "SELECT * FROM configuration_data WHERE var_name = '%s'" % (var_name)
-        insert_query = "INSERT INTO configuration_data VALUES ('%s', '%s')" % (var_name, value)
-        update_query = "UPDATE configuration_data SET value='%s' WHERE var_name='%s'" % (value, var_name)
+        insert_query = "INSERT OR REPLACE INTO configuration_data VALUES ('%s', '%s')" % (var_name, value)
         self.app.logger.debug("Setting app configuration from table...")
         try:
-            rows = connection.cursor().execute(find_query).fetchall()
-            if len(rows) == 0:
-                connection.cursor().execute(insert_query)
-            else:
-                connection.cursor().execute(update_query)
-            connection.cursor().close()
+            rows = self.connection.cursor().execute(insert_query).fetchall()
+            self.connection.commit()
         except sqlite3.OperationalError:
             self.app.logger.error("A DB error occured while setting configuration.")
             return
