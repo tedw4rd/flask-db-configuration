@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Configure {{ appname }}</title>
+    <!-- Bootstrap -->
+    <link href="static/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+    <div class="container">
+      <h1>Configure {{ appname }} Environment Variables</h1>
+      <p class="lead">Use this form to configure the environment variables for your app.  Be sure to restart your app after configuring.</p>
+      <form class="form-horizontal" method="post" action="{{extension}}">
+      {% for config_var in current_config %}
+        <div class="control-group">
+          <label class="control-label" for="{{config_var.name}}">{{config_var.name}}</label>
+          <div class="controls">
+            <input type="text" id="{{config_var.name}}">
+          </div>
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn">Configure</button>
+      </form>
+    </div>
+  </body>
+</html>

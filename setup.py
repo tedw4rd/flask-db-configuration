@@ -11,12 +11,12 @@ Links
 * `documentation <http://packages.python.org/Flask-DBConfig>`_
 
 """
-from setuptools import setup
+from distutils.core import setup
 
 
 setup(
     name='Flask-DBConfig',
-    version='0.2',
+    version='0.3.11',
     url='https://github.com/tedw4rd/flask-db-configuration/',
     license='MIT',
     author='Ted Aronson',
@@ -25,7 +25,9 @@ setup(
     long_description=__doc__,
     packages=['flaskext'],
     namespace_packages=['flaskext'],
-    zip_safe=False,
+    package_dir={'flaskext': 'flaskext'},
+    package_data={'flaskext': ['static/**/*', 'templates/*']},
+    data_files=[],
     platforms='any',
     install_requires=[
         'Flask'
