@@ -1,3 +1,24 @@
 Flask-DBConfig
 
 Configure your Flask application from a local SQLite database, and never have to ship with a config file again!
+
+Install with pip using:
+
+pip install Flask-DBConfig
+
+Usage example (more thorough documentation to come eventually):
+
+__init__.py
+
+from flask import Flask
+from flaskext.dbconfig import DBConfigurator
+
+app = Flask(__name__, instance_relative_config=True)
+configurator = DBConfigurator(["CONFIG_VARIABLE", "DATABASE", "OTHER_CONFIG_VARIABLE"], app=app, url_ext="/config")
+
+
+if not configurator.fully_configured():
+    print "The app hasn't been configured!  Please adjust environment variables at /config"
+else:
+    configurator.configure_from_db()
+    other_app_initialization_stuff()
