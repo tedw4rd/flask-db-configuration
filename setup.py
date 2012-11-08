@@ -16,7 +16,7 @@ from distutils.core import setup
 
 setup(
     name='Flask-DBConfig',
-    version='0.3.11',
+    version='0.3.12',
     url='https://github.com/tedw4rd/flask-db-configuration/',
     license='MIT',
     author='Ted Aronson',

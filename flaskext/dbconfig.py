@@ -16,7 +16,7 @@ try:
 except ImportError:
     from flask import _request_ctx_stack as stack
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, make_response, jsonify
 
 
 class DBConfigurator():
@@ -45,7 +45,7 @@ class DBConfigurator():
                                           url_prefix=self.url_ext)
 
         self.config_blueprint.add_url_rule("/", "display_configuration_page", view_func=self.display_configuration_page, methods=["GET"])
-        self.config_blueprint.add_url_rule("/", "configure_variables_from_post", view_func=self.configure_variables_from_post, methods=["POST"])
+        self.config_blueprint.add_url_rule("/api", "configure_variables_from_post", view_func=self.configure_variables_from_post, methods=["POST"])
         app.register_blueprint(self.config_blueprint)
         self.conditionally_create_config_table()
 
@@ -86,9 +86,13 @@ class DBConfigurator():
     def fully_configured(self):
         if self.config_table_exists():
             query = "SELECT * FROM configuration_data"
-            self.connection.cursor().execute(query)
-            results = self.connection.cursor().fetchall()
-            print results
+            results = self.connection.cursor().execute(query).fetchall()
+            if len(results) == 0:
+                return False
+            result_keys = map(lambda x: x[0], results)
+            for var in self.tracked_config_vars:
+                if not var in result_keys:
+                    return False
             return True
         else:
             return False
@@ -118,7 +122,6 @@ class DBConfigurator():
             self.app.logger.error("A DB error occured while loading configuration.")
             return
 
-        print(str(config))
         for k, v in config.iteritems():
             self.app.config[k] = v
 
@@ -147,7 +150,6 @@ class DBConfigurator():
         return render_template("config.html", current_config=config, appname=self.app.name, extension=self.url_ext)
 
     def configure_variables_from_post(self):
-        print request.form
         for tracked_var in self.tracked_config_vars:
             self.set_configuration_data(tracked_var, request.form[tracked_var])
 

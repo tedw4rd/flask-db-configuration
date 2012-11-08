@@ -9,9 +9,11 @@
     <script src="http://code.jquery.com/jquery-latest.js"></script>
     <script src="static/js/bootstrap.min.js"></script>
     <div class="container">
+      <div id="success_label" class="hide">SUCCESS</div>
+      <div id="error_label" class="hide">ERROR</div>
       <h1>Configure {{ appname }} Environment Variables</h1>
       <p class="lead">Use this form to configure the environment variables for your app.  Be sure to restart your app after configuring.</p>
-      <form class="form-horizontal" method="post" action="{{extension}}">
+      <form class="form-horizontal">
       {% for config_var in current_config %}
         <div class="control-group">
           <label class="control-label" for="{{config_var.name}}">{{config_var.name}}</label>
@@ -20,8 +22,23 @@
           </div>
         </div>
       {% endfor %}
-      <button type="submit" class="btn">Configure</button>
+      <a id="submit" class="btn">Configure</a>
       </form>
     </div>
+    <script type="text/javascript">
+      $("#submit").click(function(){
+        formData = {};
+        {% for config_var in current_config %}
+        formData.{{config_var.name}} = $("#{{config_var.name}}").val();
+        {% endfor %}
+        $.ajax({url:"{{extension}}/api", type:"POST", data:formData,
+          success:function(){
+            $("#success_label").show();
+          }, error:function(){
+            $("#error_label").show();
+          }
+        });
+      });
+    </script>
   </body>
 </html>
