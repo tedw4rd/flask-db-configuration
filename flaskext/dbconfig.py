@@ -30,6 +30,11 @@ class DBConfigurator():
         else:
             self.app = None
 
+    """
+        Initialize the plugin, create the database, create the table, and set up the blueprint
+
+        The database is stored at /tmp/<app name>.db
+    """
     def init_app(self, app, url_ext, tracked_config_vars):
         app.config['CONFIG_DATABASE'] = "/tmp/" + app.name + ".db"
         # Use the newstyle teardown_appcontext if it's available,
@@ -49,14 +54,23 @@ class DBConfigurator():
         app.register_blueprint(self.config_blueprint)
         self.conditionally_create_config_table()
 
+    """
+        Create the connection to the database
+    """
     def connect(self):
         return sqlite3.connect(self.app.config['CONFIG_DATABASE'])
 
+    """
+        Request teardown
+    """
     def teardown(self, exception):
         ctx = stack.top
         if hasattr(ctx, 'configuration_db'):
             ctx.configuration_db.close()
 
+    """
+        The database connection
+    """
     @property
     def connection(self):
         ctx = stack.top
@@ -67,10 +81,17 @@ class DBConfigurator():
         else:
             return self.connect()
 
+    """
+        Creates the config table if it hasn't been created before
+    """
     def conditionally_create_config_table(self):
         if not self.config_table_exists():
             self.setup_config_table()
 
+    """
+        Checks to see if the config table exists by attempting to pull data from it.
+        A failure indicates that the table doesn't exist.
+    """
     def config_table_exists(self):
         query = "SELECT * FROM configuration_data"
         self.app.logger.debug("Checking for existing configuration data...")
@@ -83,6 +104,13 @@ class DBConfigurator():
         self.app.logger.debug("Found!")
         return True
 
+    """
+        Checks to see if all the variables the plugin is supposed to track for this app are
+        tracked in the database.
+
+        Returns False if the database doesn't exist, or if it doesn't track all required
+        environment variables.  Returns True otherwise.
+    """
     def fully_configured(self):
         if self.config_table_exists():
             query = "SELECT * FROM configuration_data"
@@ -97,6 +125,12 @@ class DBConfigurator():
         else:
             return False
 
+    """
+        Creates the config table, with the name of the environment variable as its 
+        primary key.
+
+        Returns True if the operation performed successfully.  False otherwise.
+    """
     def setup_config_table(self):
         query = "CREATE TABLE configuration_data (var_name TEXT PRIMARY KEY, value TEXT)"
         self.app.logger.debug("Setting up configuration table...")
@@ -111,6 +145,12 @@ class DBConfigurator():
         self.app.logger.debug("Configuration table setup successfully!")
         return True
 
+    """
+        Populates the app's config dictionary with all of the data stored in the database.
+
+        Call this method whenever you would populate the app's config normally
+        (by environment variables or config file)
+    """
     def configure_from_db(self):
         query = "SELECT * FROM configuration_data"
         config = {}
@@ -127,6 +167,11 @@ class DBConfigurator():
 
         self.app.logger.debug("Loaded %s configuration variables." % len(config))
 
+    """
+        Stores the value of a given config variable in the database.
+
+        Does not set the value in the app's config dictionary
+    """
     def set_configuration_data(self, var_name, value):
         insert_query = "INSERT OR REPLACE INTO configuration_data VALUES ('%s', '%s')" % (var_name, value)
         self.app.logger.debug("Setting app configuration from table...")
@@ -139,6 +184,16 @@ class DBConfigurator():
 
         self.app.logger.debug("Configuration set successfully: %s=%s" % (var_name, value))
 
+    """
+        Blueprint methods below
+    """
+
+    """
+        Displays the configuration form, with elements for each of the tracked configuration
+        variables.  The template directory is stored next to this package when installed,
+        and the blueprint is set up to use that directory, so the config.html template should
+        not conflict with user provided templates.
+    """
     def display_configuration_page(self):
         config = []
         for tracked_var in self.tracked_config_vars:
@@ -149,6 +204,12 @@ class DBConfigurator():
 
         return render_template("config.html", current_config=config, appname=self.app.name, extension=self.url_ext)
 
+    """
+        Data posted to the /api URL ends up here.
+
+        Convert the form data posted from the config page to configuration data for the app,
+        and store it in the database.
+    """
     def configure_variables_from_post(self):
         for tracked_var in self.tracked_config_vars:
             self.set_configuration_data(tracked_var, request.form[tracked_var])
