@@ -3,7 +3,12 @@
     flaskext.dbconfig
     ~~~~~~~~~~~~~~~~~
 
-    Description of the module goes here...
+    Allows for after-the-fact configuration of Flask applications.
+
+    Open source your Flask application and never have to worry about sharing
+    sensitive configuration data!
+
+    See README for usage information.
 
     :copyright: (c) 2012 by Ted Aronson.
     :license: MIT, see LICENSE for more details.
@@ -21,6 +26,12 @@ from flask import Blueprint, render_template, request, make_response, jsonify
 
 class DBConfigurator():
 
+    """
+        Create the plugin and tell it to configure the given config variable names (required).
+        Optionally provide the application to configure.
+        Optionally provide the URL extension at which you want to access the configuration
+        forms.
+    """
     def __init__(self, tracked_config_vars, app=None, url_ext="/config"):
         self.tracked_config_vars = tracked_config_vars
         if app is not None:
